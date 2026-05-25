@@ -35,3 +35,6 @@ Thumbs.db
 
 # Upload temp
 uploads/
+
+# Wrangler / Cloudflare
+.wrangler/
