@@ -72,15 +72,10 @@ function OrgSwitcher() {
   const columns = buildColumns();
   const pathLabel = currentOrg ? buildPath(orgId!) : '选择组织';
 
-  const choose = (node: any, colIdx: number) => {
-    const newHover = hovered.slice(0, colIdx + 1);
-    newHover[colIdx] = node.id;
-    setHovered(newHover);
-    const children = flat.filter(o => o.parentId === node.id);
-    if (children.length === 0 || colIdx >= 3) {
-      setOrgId(node.id);
-      setOpen(false);
-    }
+  const choose = (node: any) => {
+    setOrgId(node.id);
+    setOpen(false);
+    setHovered([]);
   };
 
   return (
@@ -105,7 +100,7 @@ function OrgSwitcher() {
                         setHovered(h);
                       }
                     }}
-                    onClick={() => choose(n, idx)}>
+                    onClick={() => choose(n)}>
                     <span>{n.name}</span>
                     {!isLeaf && <span><Icon name="chevronRight" size={10} /></span>}
                   </div>
