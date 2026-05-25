@@ -21,5 +21,8 @@ export const createOrg = (data: any) =>
 export const updateOrg = (id: string, data: any) =>
   api.put(`/organizations/${id}`, data);
 
+export const moveOrg = (id: string, newParentId: string) =>
+  api.patch(`/organizations/${id}/move`, { newParentId });
+
 export const deleteOrg = (id: string, cascade = false) =>
   api.delete(`/organizations/${id}`, { params: cascade ? { cascade: 'true' } : {} });

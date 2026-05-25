@@ -99,7 +99,7 @@ function HBar({ data, max: maxProp }: { data: { label: string; value: number; co
 }
 
 export default function Dashboard() {
-  const { orgId, currentOrg } = useOrg();
+  const { orgId, currentOrg, setOrgId, flat } = useOrg();
   const [yearRange, setYearRange] = useState('12m');
 
   const periodEnd = dayjs().format('YYYY-MM');
@@ -147,8 +147,8 @@ export default function Dashboard() {
   })).filter(c => c.value > 0).sort((a, b) => b.value - a.value);
 
   const subOrgData = bySubOrg.map((o: any) => ({
-    label: o.name, value: o.total || o.value || 0, color: 'var(--c-primary)'
-  })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+    id: o.id, label: o.name, value: o.total || o.value || 0, color: 'var(--c-primary)'
+  })).filter((d: any) => d.value > 0).sort((a: any, b: any) => b.value - a.value);
 
   const intensity = stats.intensity || 0;
 
@@ -264,8 +264,30 @@ export default function Dashboard() {
           </Panel>
         )}
         {subOrgData.length > 0 && (
-          <Panel title="下辖组织排放对比" extra={<span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>共 {subOrgData.length} 个</span>}>
-            <HBar data={subOrgData} />
+          <Panel title="下辖组织排放对比" extra={
+            <span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>共 {subOrgData.length} 个 · 点击可查看下级看板</span>
+          }>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {subOrgData.map((d: any, i: number) => {
+                const m = Math.max(...subOrgData.map((x: any) => x.value), 1);
+                return (
+                  <div key={i}
+                    style={{ cursor: 'pointer', borderRadius: 4, padding: '2px 0', transition: 'background 0.15s' }}
+                    onClick={() => d.id && setOrgId(d.id)}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'var(--c-primary-bg)'; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                      <span style={{ color: 'var(--c-primary)', textDecoration: 'underline' }}>{d.label}</span>
+                      <span style={{ color: 'var(--c-text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{fmt(d.value, 1)} tCO₂e</span>
+                    </div>
+                    <div className="cc-bar-track">
+                      <div className="cc-bar-fill" style={{ width: (d.value / m * 100) + '%', background: d.color || 'var(--c-primary)' }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </Panel>
         )}
       </div>

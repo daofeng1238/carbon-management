@@ -432,6 +432,9 @@ a:hover { color: var(--c-primary-hover); }
 }
 .cc-tree-row:hover { background: var(--c-bg-hover); }
 .cc-tree-row.active { background: var(--c-primary-bg); color: var(--c-primary); font-weight: 500; }
+.cc-tree-row.drag-over { background: #e3f2fd; outline: 2px dashed var(--c-primary); outline-offset: -2px; }
+.cc-tree-row[draggable="true"] { cursor: grab; }
+.cc-tree-row[draggable="true"]:active { cursor: grabbing; }
 .cc-tree-toggle {
   display: inline-grid; place-items: center;
   width: 16px; height: 16px; color: var(--c-text-muted);

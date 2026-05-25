@@ -408,14 +408,18 @@ export const PageHeader: React.FC<PageHeaderProps> = ({ title, breadcrumb, extra
 
 // ── Tree ──────────────────────────────────────────────────────────
 interface TreeNode { id: string; name: string; children?: TreeNode[]; [key: string]: any; }
-interface TreeProps { data: TreeNode; activeId?: string; onSelect?: (node: TreeNode) => void; }
-export const Tree: React.FC<TreeProps> = ({ data, activeId, onSelect }) => {
+interface TreeProps {
+  data: TreeNode; activeId?: string; onSelect?: (node: TreeNode) => void;
+  draggable?: boolean; onMove?: (dragId: string, targetId: string) => void;
+}
+export const Tree: React.FC<TreeProps> = ({ data, activeId, onSelect, draggable, onMove }) => {
   const [expanded, setExpanded] = useState<Set<string>>(() => {
     const ids = new Set<string>();
     const walk = (n: TreeNode) => { ids.add(n.id); (n.children || []).forEach(walk); };
     walk(data);
     return ids;
   });
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const toggle = (id: string) => {
     const next = new Set(expanded);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -426,8 +430,23 @@ export const Tree: React.FC<TreeProps> = ({ data, activeId, onSelect }) => {
     const isExp = expanded.has(node.id);
     return (
       <div key={node.id} className="cc-tree-node">
-        <div className={'cc-tree-row' + (activeId === node.id ? ' active' : '')}
-             onClick={() => onSelect?.(node)}>
+        <div
+          className={'cc-tree-row' + (activeId === node.id ? ' active' : '') + (dragOverId === node.id ? ' drag-over' : '')}
+          onClick={() => onSelect?.(node)}
+          draggable={draggable && node.level !== 1}
+          onDragStart={(e) => { e.dataTransfer.setData('text/plain', node.id); e.dataTransfer.effectAllowed = 'move'; }}
+          onDragOver={(e) => {
+            if (!draggable) return;
+            e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+            setDragOverId(node.id);
+          }}
+          onDragLeave={() => setDragOverId(null)}
+          onDrop={(e) => {
+            e.preventDefault(); setDragOverId(null);
+            const dragId = e.dataTransfer.getData('text/plain');
+            if (dragId && dragId !== node.id && onMove) onMove(dragId, node.id);
+          }}
+        >
           <span className={'cc-tree-toggle' + (isExp ? ' expanded' : '') + (isLeaf ? ' leaf' : '')}
                 onClick={(e) => { e.stopPropagation(); toggle(node.id); }}>
             <Icon name="chevronRight" size={9} />

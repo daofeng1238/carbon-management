@@ -3,6 +3,9 @@ import { api } from './client';
 export const fetchEntries = (params?: any) =>
   api.get('/entries', { params });
 
+export const fetchEntrySummary = (params?: any) =>
+  api.get('/entries/summary', { params });
+
 export const fetchEntryById = (id: string) =>
   api.get(`/entries/${id}`);
 

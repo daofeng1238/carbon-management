@@ -164,6 +164,51 @@ export class OrganizationsService {
     return this.repo.save(org);
   }
 
+  async moveOrg(id: string, newParentId: string, userId: string) {
+    const org = await this.repo.findOne({ where: { id, deletedAt: null } });
+    if (!org) throw new NotFoundException('组织不存在');
+    if (org.level === 1) throw new BadRequestException('集团根节点不可移动');
+
+    const newParent = await this.repo.findOne({ where: { id: newParentId, deletedAt: null } });
+    if (!newParent) throw new BadRequestException('目标父组织不存在');
+
+    const newLevel = newParent.level + 1;
+    if (newLevel > 4) throw new BadRequestException('移动后层级超过4级限制');
+
+    // Prevent moving into own descendant
+    if (newParent.path.startsWith(org.path + '.') || newParent.id === org.id) {
+      throw new BadRequestException('不能移动到自身或自身的下属组织');
+    }
+
+    const oldPath = org.path;
+    const pathSegment = org.path.split('.').pop();
+    const newPath = newParent.path + '.' + pathSegment;
+    const levelDelta = newLevel - org.level;
+
+    // Update this org
+    org.parentId = newParentId;
+    org.level = newLevel;
+    org.path = newPath;
+    org.updatedBy = userId;
+    await this.repo.save(org);
+
+    // Update all descendants' path and level
+    const descendants = await this.repo
+      .createQueryBuilder('o')
+      .where(`o.path LIKE :prefix`, { prefix: oldPath + '.%' })
+      .andWhere('o.deleted_at IS NULL')
+      .getMany();
+
+    for (const d of descendants) {
+      d.path = newPath + d.path.substring(oldPath.length);
+      d.level = d.level + levelDelta;
+      d.updatedBy = userId;
+    }
+    if (descendants.length) await this.repo.save(descendants);
+
+    return { moved: descendants.length + 1, newPath, newLevel };
+  }
+
   async remove(id: string, cascade: boolean, userId: string) {
     const org = await this.repo.findOne({ where: { id, deletedAt: null } });
     if (!org) throw new NotFoundException();

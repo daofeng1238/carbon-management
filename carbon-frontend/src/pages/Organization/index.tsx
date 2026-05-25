@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchOrgTree, createOrg, updateOrg, deleteOrg } from '@/api/organizations';
+import { fetchOrgTree, createOrg, updateOrg, deleteOrg, moveOrg } from '@/api/organizations';
 import { fetchIndustries } from '@/api/dict';
 import {
   PageHeader, Panel, Button, Select, Input, Tree, Modal, FormRow,
@@ -41,9 +41,30 @@ export default function Organization() {
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => deleteOrg(id, true),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['orgTree'] }); toast.push('组织已删除'); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['orgTree'] }); toast.push('组织已删除'); setSelectedId(null); },
     onError: (e: any) => toast.push(e.message || '删除失败', 'error'),
   });
+
+  const moveMut = useMutation({
+    mutationFn: ({ id, newParentId }: { id: string; newParentId: string }) => moveOrg(id, newParentId),
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ['orgTree'] });
+      toast.push(`已移动 ${data.moved || 1} 个组织`);
+    },
+    onError: (e: any) => toast.push(e.message || '移动失败', 'error'),
+  });
+
+  const handleDragMove = async (dragId: string, targetId: string) => {
+    const dragNode = tree ? findNode(tree as any, dragId) : null;
+    const targetNode = tree ? findNode(tree as any, targetId) : null;
+    if (!dragNode || !targetNode) return;
+
+    const ok = await confirm({
+      title: '确认移动',
+      message: `确定将「${dragNode.name}」移动到「${targetNode.name}」下方？`,
+    });
+    if (ok) moveMut.mutate({ id: dragId, newParentId: targetId });
+  };
 
   const openCreate = (parentId?: string) => {
     setForm({ parentId, industryCode: 'GENERAL', standard: 'ISO 14064-1:2018' });
@@ -63,7 +84,6 @@ export default function Organization() {
     if (ok) deleteMut.mutate(node.id);
   };
 
-  // Find selected node from tree
   const findNode = (root: any, id: string): any => {
     if (!root) return null;
     if (root.id === id) return root;
@@ -81,14 +101,20 @@ export default function Organization() {
         extra={<Button variant="primary" icon="plus" onClick={() => openCreate()}>新增顶层组织</Button>}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 16, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: 16, alignItems: 'start' }}>
         {/* Tree panel */}
-        <Panel title="组织树" flush>
+        <Panel title="组织树" extra={<span style={{ fontSize: 11, color: 'var(--c-text-muted)' }}>拖拽节点可调整层级</span>} flush>
           {isLoading ? (
             <div style={{ padding: 20, textAlign: 'center', color: 'var(--c-text-muted)' }}>加载中...</div>
           ) : tree ? (
             <div style={{ padding: '8px 0' }}>
-              <Tree data={tree as any} activeId={selectedId || undefined} onSelect={(n) => setSelectedId(n.id)} />
+              <Tree
+                data={tree as any}
+                activeId={selectedId || undefined}
+                onSelect={(n) => setSelectedId(n.id)}
+                draggable
+                onMove={handleDragMove}
+              />
             </div>
           ) : (
             <div style={{ padding: 20, textAlign: 'center', color: 'var(--c-text-muted)' }}>暂无数据</div>
@@ -145,11 +171,7 @@ export default function Organization() {
       >
         {!form.id && (
           <FormRow label="组织编码" required>
-            <Input
-              value={form.code || ''}
-              onChange={(v) => setForm({ ...form, code: v })}
-              placeholder="如 ZL-NEW-01（仅限字母、数字和连字符）"
-            />
+            <Input value={form.code || ''} onChange={(v) => setForm({ ...form, code: v })} placeholder="如 ZL-NEW-01（仅限字母、数字和连字符）" />
           </FormRow>
         )}
         <FormRow label="组织名称" required>
@@ -157,11 +179,8 @@ export default function Organization() {
         </FormRow>
         <FormRow label="所属行业">
           <Select
-            value={form.industryCode || ''}
-            onChange={(v) => setForm({ ...form, industryCode: v })}
-            options={INDUSTRIES}
-            placeholder="请选择行业"
-            style={{ width: '100%' }}
+            value={form.industryCode || ''} onChange={(v) => setForm({ ...form, industryCode: v })}
+            options={INDUSTRIES} placeholder="请选择行业" style={{ width: '100%' }}
           />
         </FormRow>
         <FormRow label="核算标准">

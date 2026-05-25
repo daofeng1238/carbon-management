@@ -9,6 +9,11 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 export class EntriesController {
   constructor(private service: EntriesService) {}
 
+  @Get('summary')
+  getSummary(@Query() query: any) {
+    return this.service.getSummary(query);
+  }
+
   @Get('export')
   async export(@Query() query: any, @Res() res: any) {
     return this.service.exportEntries(query, res);

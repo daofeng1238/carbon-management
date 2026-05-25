@@ -30,6 +30,41 @@ export class EntriesService {
     return descendants.map((d) => d.o_id);
   }
 
+  async getSummary(query: any) {
+    const { orgId, includeDescendants, period, periodStart, periodEnd, scope, category, status } = query;
+    const qb = this.repo.createQueryBuilder('e');
+    if (orgId) {
+      if (includeDescendants === 'true') {
+        const ids = await this.getDescendantIds(orgId);
+        qb.andWhere('e.org_id IN (:...ids)', { ids });
+      } else {
+        qb.andWhere('e.org_id = :orgId', { orgId });
+      }
+    }
+    if (period) qb.andWhere('e.period = :period', { period });
+    if (periodStart) qb.andWhere('e.period >= :periodStart', { periodStart });
+    if (periodEnd) qb.andWhere('e.period <= :periodEnd', { periodEnd });
+    if (scope) qb.andWhere('e.scope = :scope', { scope: +scope });
+    if (category) qb.andWhere('e.category_code = :category', { category });
+    if (status) qb.andWhere('e.status = :status', { status });
+
+    const result = await qb
+      .select('e.scope', 'scope')
+      .addSelect('SUM(e.emission)', 'total')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('e.scope')
+      .getRawMany();
+
+    const byScope: Record<number, number> = { 1: 0, 2: 0, 3: 0 };
+    let grandTotal = 0, totalCount = 0;
+    for (const r of result) {
+      byScope[+r.scope] = +(+r.total).toFixed(2);
+      grandTotal += +r.total;
+      totalCount += +r.count;
+    }
+    return { total: +grandTotal.toFixed(2), byScope, count: totalCount };
+  }
+
   async getList(query: any) {
     const { orgId, includeDescendants, period, periodStart, periodEnd, scope, category, status, keyword, page = 1, pageSize = 10 } = query;
     const qb = this.repo.createQueryBuilder('e');
@@ -48,7 +83,7 @@ export class EntriesService {
     if (scope) qb.andWhere('e.scope = :scope', { scope: +scope });
     if (category) qb.andWhere('e.category_code = :category', { category });
     if (status) qb.andWhere('e.status = :status', { status });
-    if (keyword) qb.andWhere('e.id ILIKE :kw', { kw: `%${keyword}%` });
+    if (keyword) qb.andWhere('(e.id ILIKE :kw OR e.factor_id ILIKE :kw)', { kw: `%${keyword}%` });
 
     qb.orderBy('e.period', 'DESC').addOrderBy('e.created_at', 'DESC');
 
