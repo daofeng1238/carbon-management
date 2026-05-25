@@ -117,7 +117,6 @@ interface SelectProps {
   style?: React.CSSProperties;
 }
 export const Select: React.FC<SelectProps> = ({ value, onChange, options = [], placeholder = '请选择', disabled, style }) => {
-  const hasMatch = value != null && value !== '' && options.some(o => o.value === value);
   return (
     <select
       className="cc-select"
@@ -126,7 +125,7 @@ export const Select: React.FC<SelectProps> = ({ value, onChange, options = [], p
       disabled={disabled}
       style={style}
     >
-      {(!hasMatch) && <option value="">{placeholder}</option>}
+      <option value="">{placeholder}</option>
       {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );

@@ -83,7 +83,14 @@ export class EntriesService {
     if (scope) qb.andWhere('e.scope = :scope', { scope: +scope });
     if (category) qb.andWhere('e.category_code = :category', { category });
     if (status) qb.andWhere('e.status = :status', { status });
-    if (keyword) qb.andWhere('(e.id ILIKE :kw OR e.factor_id ILIKE :kw)', { kw: `%${keyword}%` });
+    if (keyword) {
+      qb.leftJoin('factors', 'f', 'f.id = e.factor_id')
+        .leftJoin('organizations', 'o', 'o.id = e.org_id')
+        .andWhere(
+          '(e.id ILIKE :kw OR e.factor_id ILIKE :kw OR f.name ILIKE :kw OR o.name ILIKE :kw OR o.code ILIKE :kw OR e.remark ILIKE :kw)',
+          { kw: `%${keyword}%` },
+        );
+    }
 
     qb.orderBy('e.period', 'DESC').addOrderBy('e.created_at', 'DESC');
 

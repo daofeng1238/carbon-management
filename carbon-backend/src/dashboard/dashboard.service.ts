@@ -136,14 +136,18 @@ export class DashboardService {
   }
 
   async getTrend(query: any) {
-    const { orgId, groupBy = 'month' } = query;
+    const { orgId, periodStart, periodEnd, groupBy = 'month' } = query;
     const ids = await this.getDescendantIds(orgId);
 
-    const entries = await this.entryRepo
+    const qb = this.entryRepo
       .createQueryBuilder('e')
       .where('e.org_id IN (:...ids)', { ids })
-      .andWhere('e.status IN (:...st)', { st: ['submitted', 'approved'] })
-      .getMany();
+      .andWhere('e.status IN (:...st)', { st: ['submitted', 'approved'] });
+
+    if (periodStart) qb.andWhere('e.period >= :ps', { ps: periodStart });
+    if (periodEnd) qb.andWhere('e.period <= :pe', { pe: periodEnd });
+
+    const entries = await qb.getMany();
 
     const groups: Record<string, { s1: number; s2: number; s3: number; total: number }> = {};
     for (const e of entries) {

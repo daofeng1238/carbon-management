@@ -36,39 +36,52 @@ function Doughnut({ data, total }: { data: { value: number; color: string; label
   );
 }
 
-// ── Stacked bar chart ─────────────────────────────────────────────
-function StackedBar({ data }: { data: { label: string; s1: number; s2: number; s3: number }[] }) {
-  const max = Math.max(...data.map(d => d.s1 + d.s2 + d.s3), 1);
+// ── Grouped bar chart (3 bars per month) ─────────────────────────
+function GroupedBar({ data }: { data: { label: string; s1: number; s2: number; s3: number }[] }) {
+  const max = Math.max(...data.flatMap(d => [d.s1, d.s2, d.s3]), 1);
   const w = 720, padL = 50, padR = 16, padB = 36, padT = 16;
   const chartW = w - padL - padR, chartH = 280 - padT - padB;
-  const barW = chartW / data.length * 0.65;
-  const gap = chartW / data.length;
+  const groupW = chartW / data.length;
+  const barW = Math.min(14, groupW * 0.22);
+  const barGap = Math.min(3, barW * 0.2);
   const colors = ['var(--c-scope1)', 'var(--c-scope2)', 'var(--c-scope3)'];
+
+  // Y-axis scale
+  const yMax = max * 1.15;
+
   return (
     <svg width="100%" viewBox={`0 0 ${w} 280`} preserveAspectRatio="none" style={{ width: '100%', height: 280 }}>
       {[0, 0.25, 0.5, 0.75, 1].map((t, i) => {
         const y = padT + chartH * (1 - t);
+        const val = yMax * t;
         return (
           <g key={i}>
             <line x1={padL} y1={y} x2={w - padR} y2={y} stroke="var(--c-border-lighter)" strokeWidth="1" />
             <text x={padL - 6} y={y + 3} fontSize="10" fill="var(--c-text-muted)" textAnchor="end">
-              {fmt(max * t / 1000, 0)}k
+              {val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val.toFixed(0)}
             </text>
           </g>
         );
       })}
       {data.map((d, i) => {
-        const x = padL + i * gap + (gap - barW) / 2;
+        const cx = padL + i * groupW + groupW / 2;
+        const totalBarWidth = 3 * barW + 2 * barGap;
+        const startX = cx - totalBarWidth / 2;
         const segs = [d.s1, d.s2, d.s3];
-        let yC = padT + chartH;
+        const baseY = padT + chartH;
         return (
           <g key={i}>
             {segs.map((v, j) => {
-              const h = chartH * (v / max);
-              yC -= h;
-              return <rect key={j} x={x} y={yC} width={barW} height={h} fill={colors[j]} opacity="0.9" rx="1"><title>范围{j+1}: {fmt(v, 2)}</title></rect>;
+              const h = (v / yMax) * chartH;
+              const x = startX + j * (barW + barGap);
+              return (
+                <rect key={j} x={x} y={baseY - h} width={barW} height={Math.max(h, 0)}
+                  fill={colors[j]} opacity="0.9" rx={1}>
+                  <title>范围{j + 1}: {fmt(v, 2)} tCO₂e</title>
+                </rect>
+              );
             })}
-            <text x={x + barW / 2} y={padT + chartH + 18} fontSize="10" fill="var(--c-text-muted)" textAnchor="middle">
+            <text x={cx} y={padT + chartH + 18} fontSize="10" fill="var(--c-text-muted)" textAnchor="middle">
               {d.label.slice(-5)}
             </text>
           </g>
@@ -100,10 +113,28 @@ function HBar({ data, max: maxProp }: { data: { label: string; value: number; co
 
 export default function Dashboard() {
   const { orgId, currentOrg, setOrgId, flat } = useOrg();
-  const [yearRange, setYearRange] = useState('12m');
+  const [rangeMode, setRangeMode] = useState('12m');
+  const [customStart, setCustomStart] = useState(dayjs().subtract(11, 'month').format('YYYY-MM'));
+  const [customEnd, setCustomEnd] = useState(dayjs().format('YYYY-MM'));
 
-  const periodEnd = dayjs().format('YYYY-MM');
-  const periodStart = dayjs().subtract(11, 'month').format('YYYY-MM');
+  let periodStart: string, periodEnd: string;
+  if (rangeMode === 'custom') {
+    periodStart = customStart;
+    periodEnd = customEnd;
+  } else if (rangeMode === '6m') {
+    periodEnd = dayjs().format('YYYY-MM');
+    periodStart = dayjs().subtract(5, 'month').format('YYYY-MM');
+  } else if (rangeMode === 'ytd') {
+    periodEnd = dayjs().format('YYYY-MM');
+    periodStart = dayjs().startOf('year').format('YYYY-MM');
+  } else if (rangeMode === 'last-year') {
+    periodEnd = dayjs().subtract(1, 'year').endOf('year').format('YYYY-MM');
+    periodStart = dayjs().subtract(1, 'year').startOf('year').format('YYYY-MM');
+  } else {
+    // 12m default
+    periodEnd = dayjs().format('YYYY-MM');
+    periodStart = dayjs().subtract(11, 'month').format('YYYY-MM');
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard', orgId, periodStart, periodEnd],
@@ -159,22 +190,38 @@ export default function Dashboard() {
         breadcrumb={['首页', '数据看板']}
         orgName={currentOrg?.name}
         extra={
-          <>
-            <Select value={yearRange} onChange={setYearRange} options={[
+          <div className="cc-flex gap-8 align-c" style={{ flexWrap: 'wrap' }}>
+            <Select value={rangeMode} onChange={(v) => setRangeMode(v)} options={[
               { value: '12m', label: '近 12 个月' },
               { value: '6m', label: '近 6 个月' },
               { value: 'ytd', label: '本年至今' },
+              { value: 'last-year', label: '上一年度' },
+              { value: 'custom', label: '自定义范围' },
             ]} style={{ width: 140 }} />
-            <Button icon="refresh">刷新</Button>
-            <Button icon="download">导出</Button>
-          </>
+            {rangeMode === 'custom' && (
+              <>
+                <input type="month" className="cc-input" value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  style={{ width: 140, height: 32, fontSize: 13, padding: '0 8px', border: '1px solid var(--c-border)', borderRadius: 4 }}
+                />
+                <span style={{ color: 'var(--c-text-muted)', fontSize: 13 }}>至</span>
+                <input type="month" className="cc-input" value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  style={{ width: 140, height: 32, fontSize: 13, padding: '0 8px', border: '1px solid var(--c-border)', borderRadius: 4 }}
+                />
+              </>
+            )}
+            {rangeMode !== 'custom' && (
+              <span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>{periodStart} ~ {periodEnd}</span>
+            )}
+          </div>
         }
       />
 
       {/* Stats row 1 */}
       <div className="cc-grid cols-4">
         <div className="cc-stat accent-primary">
-          <div className="label">总排放量（12个月）</div>
+          <div className="label">总排放量（{periodStart} ~ {periodEnd}）</div>
           <div><span className="value">{fmt(total, 0)}</span><span className="unit">tCO₂e</span></div>
           <div className={'delta ' + (delta >= 0 ? 'up' : 'down')}>{fmtPct(delta)} 较上半年</div>
         </div>
@@ -226,7 +273,7 @@ export default function Dashboard() {
       {monthly.length > 0 && (
         <div className="cc-grid" style={{ gridTemplateColumns: '1fr 400px' }}>
           <Panel title="月度排放趋势（按范围）">
-            <StackedBar data={monthly} />
+            <GroupedBar data={monthly} />
             <div className="cc-flex gap-16" style={{ marginTop: 12, justifyContent: 'center', fontSize: 12, color: 'var(--c-text-secondary)' }}>
               {[['范围一', 'var(--c-scope1)'], ['范围二', 'var(--c-scope2)'], ['范围三', 'var(--c-scope3)']].map(([label, color]) => (
                 <span key={label} className="cc-flex gap-8 align-c">
