@@ -33,8 +33,9 @@ Thumbs.db
 *.njsproj
 *.sln
 
-# Upload temp
-uploads/
+# Upload temp (runtime only, not source code)
+/uploads/
+carbon-backend/uploads/
 
 # Wrangler / Cloudflare
 .wrangler/
