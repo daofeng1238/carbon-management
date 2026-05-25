@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: carbon-backend
+    runtime: node
+    rootDir: carbon-backend
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/main.js
+    plan: free
+    healthCheckPath: /api/v1/auth/me
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false          # 在 Render 控制台填写 Neon 连接串
+      - key: JWT_SECRET
+        generateValue: true  # Render 自动生成随机值
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false          # 填写 Cloudflare Pages 域名

@@ -9,7 +9,7 @@ export class ApiError extends Error {
 // The interceptors unwrap { code, data, message } → return `data` directly.
 // So `api.get(...)` resolves to the inner `data` field, not AxiosResponse.
 const _axios = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE || '/api/v1',
+  baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '/api/v1',
   timeout: 30000,
 });
 
