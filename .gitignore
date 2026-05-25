@@ -1,0 +1,37 @@
+# Node
+node_modules/
+dist/
+.cache/
+
+# Env
+.env
+.env.local
+.env*.local
+
+# Build
+carbon-frontend/dist/
+carbon-backend/dist/
+
+# PostgreSQL portable
+pgsql/
+postgres-portable.zip
+pgdata/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Upload temp
+uploads/

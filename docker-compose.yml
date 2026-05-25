@@ -1,0 +1,47 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: carbon
+      POSTGRES_USER: carbon
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Carbon@2025DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./carbon-backend/src/database/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carbon"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./carbon-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgres://carbon:${DB_PASSWORD:-Carbon@2025DB}@postgres:5432/carbon
+      JWT_SECRET: ${JWT_SECRET:-carbon-jwt-secret-change-in-prod}
+      JWT_EXPIRES_IN: 24h
+      PORT: 3000
+      CORS_ORIGIN: http://localhost,http://localhost:80
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build: ./carbon-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  uploads:
