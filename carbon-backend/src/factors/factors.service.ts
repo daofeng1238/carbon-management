@@ -41,12 +41,19 @@ export class FactorsService {
   }
 
   async getRecommended(query: any) {
-    const { orgId, categoryCode } = query;
+    const { industryCode, categoryCode } = query;
     const qb = this.repo.createQueryBuilder('f').where('f.status = :s', { s: 'enabled' });
     if (categoryCode) qb.andWhere('f.category_code = :c', { c: categoryCode });
-    qb.orderBy(`CASE WHEN f.scope_type = 'industry' THEN 0 ELSE 1 END`, 'ASC')
-      .addOrderBy('f.effective_date', 'DESC');
-    return qb.limit(20).getMany();
+
+    // Prefer industry-specific factors for the org's industry, fall back to GENERAL
+    if (industryCode && industryCode !== 'GENERAL') {
+      qb.andWhere('(f.industry_code = :ind OR f.industry_code = :gen)', { ind: industryCode, gen: 'GENERAL' });
+      qb.orderBy(`CASE WHEN f.industry_code = '${industryCode}' THEN 0 ELSE 1 END`, 'ASC');
+    } else {
+      qb.orderBy(`CASE WHEN f.scope_type = 'industry' THEN 0 ELSE 1 END`, 'ASC');
+    }
+    qb.addOrderBy('f.effective_date', 'DESC');
+    return qb.limit(50).getMany();
   }
 
   async create(dto: any, userId: string) {
@@ -111,30 +118,77 @@ export class FactorsService {
     await workbook.xlsx.load(file.buffer as any);
     const sheet = workbook.worksheets[0];
 
+    const VALID_CATEGORIES = ['FUEL', 'PROCESS', 'FUGITIVE', 'ELEC', 'HEAT', 'TRANSPORT', 'WASTE', 'BUSINESS'];
+
+    // Get current max ID for sequential numbering
+    const maxId = await this.repo.createQueryBuilder('f').select('MAX(f.id)', 'max').getRawOne();
+    let nextNum = 21;
+    if (maxId?.max) {
+      const match = maxId.max.match(/^F(\d+)$/);
+      if (match) nextNum = parseInt(match[1]) + 1;
+    }
+
     let total = 0, success = 0, failed = 0;
     const errorRows: any[] = [];
+    const toInsert: Factor[] = [];
 
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
+    for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+      const row = sheet.getRow(rowNumber);
+      const name = row.getCell(1).text?.trim();
+      const categoryCode = row.getCell(2).text?.trim();
+      const valueText = row.getCell(3).text?.trim();
+      const unit = row.getCell(4).text?.trim();
+      const source = row.getCell(5).text?.trim();
+      const version = row.getCell(6).text?.trim();
+      const effectiveDate = row.getCell(7).text?.trim();
+      const industryCode = row.getCell(8).text?.trim() || 'GENERAL';
+      const standard = row.getCell(9).text?.trim() || 'ISO';
+
+      if (!name && !categoryCode && !valueText) continue;
       total++;
-      try {
-        const name = row.getCell(1).text?.trim();
-        const categoryCode = row.getCell(2).text?.trim();
-        const value = parseFloat(row.getCell(3).text);
-        const unit = row.getCell(4).text?.trim();
-        const source = row.getCell(5).text?.trim();
-        const version = row.getCell(6).text?.trim();
-        const effectiveDate = row.getCell(7).text?.trim();
 
-        if (!name || !categoryCode || !unit || !source || !version || !effectiveDate || isNaN(value) || value <= 0) {
-          throw new Error('必填列为空或数值无效');
-        }
+      try {
+        if (!name) throw new Error('A列(因子名称)不能为空');
+        if (!categoryCode) throw new Error('B列(类别编码)不能为空');
+        if (!VALID_CATEGORIES.includes(categoryCode)) throw new Error(`B列类别编码无效，应为: ${VALID_CATEGORIES.join('/')}`);
+        if (!valueText) throw new Error('C列(因子值)不能为空');
+        const value = parseFloat(valueText);
+        if (isNaN(value) || value <= 0) throw new Error('C列(因子值)必须是正数');
+        if (!unit) throw new Error('D列(单位)不能为空');
+        if (!source) throw new Error('E列(数据来源)不能为空');
+        if (!version) throw new Error('F列(版本号)不能为空');
+        if (!effectiveDate) throw new Error('G列(生效日期)不能为空');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(effectiveDate)) throw new Error('G列日期格式应为 YYYY-MM-DD');
+
+        const id = `F${String(nextNum++).padStart(3, '0')}`;
+        const factor = this.repo.create({
+          id,
+          lineageId: uuidv4(),
+          name,
+          categoryCode,
+          industryCode,
+          value,
+          unit,
+          source,
+          version,
+          effectiveDate,
+          standard,
+          scopeType: industryCode === 'GENERAL' ? 'general' : 'industry',
+          status: 'enabled',
+          createdBy: userId,
+          updatedBy: userId,
+        });
+        toInsert.push(factor);
         success++;
-      } catch (e) {
+      } catch (e: any) {
         failed++;
-        errorRows.push({ row: rowNumber, reason: e.message });
+        errorRows.push({ row: rowNumber, name: name || '', reason: e.message });
       }
-    });
+    }
+
+    if (toInsert.length) {
+      await this.repo.save(toInsert);
+    }
 
     return { total, success, failed, errorRows };
   }

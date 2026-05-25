@@ -209,7 +209,19 @@ export default function DataImport() {
 
           {result.errorRows?.length > 0 && (
             <div style={{ marginBottom: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 10, color: 'var(--c-text-regular)' }}>错误明细</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text-regular)' }}>错误明细（共 {result.errorRows.length} 行）</div>
+                <Button size="sm" icon="download" onClick={() => {
+                  const header = ['行号', '组织编码', '排放因子', '列', '错误原因'];
+                  const rows = result.errorRows.map((r: any) => [r.row, r.org || '', r.factor || '', r.col || '', r.reason || '']);
+                  const csv = [header, ...rows].map((r: any[]) => r.map((v: any) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+                  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url; a.download = 'import_errors.csv'; a.click();
+                  URL.revokeObjectURL(url);
+                }}>下载错误报告</Button>
+              </div>
               <Table columns={errorColumns} data={result.errorRows} rowKey="row" />
             </div>
           )}

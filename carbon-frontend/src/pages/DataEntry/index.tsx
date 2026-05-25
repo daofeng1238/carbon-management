@@ -42,8 +42,8 @@ export default function DataEntry() {
   });
 
   const { data: factors } = useQuery({
-    queryKey: ['factors-recommended', orgId],
-    queryFn: () => fetchRecommendedFactors({ orgId }),
+    queryKey: ['factors-recommended', orgId, currentOrg?.industryCode],
+    queryFn: () => fetchRecommendedFactors({ orgId, industryCode: currentOrg?.industryCode }),
     enabled: !!orgId,
   });
 
@@ -91,6 +91,7 @@ export default function DataEntry() {
       period: form.period,
       factorId: form.factorId,
       quantity: parseFloat(form.quantity),
+      remark: form.remark || '',
       status: 'draft',
     });
   };
@@ -246,8 +247,18 @@ export default function DataEntry() {
           }}>
             <div>预估排放量：<strong style={{ color: 'var(--c-primary)', fontSize: 15 }}>{fmt(previewEmission, 4)}</strong> tCO₂e</div>
             <div style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>= {form.quantity} × {selectedFactor.value}（{selectedFactor.unit}）</div>
+            {selectedFactor.gwpNote && (
+              <div style={{ color: 'var(--c-text-muted)', fontSize: 12 }}>GWP说明：{selectedFactor.gwpNote}</div>
+            )}
           </div>
         )}
+        <FormRow label="备注">
+          <Input
+            value={form.remark || ''}
+            onChange={(v) => setForm({ ...form, remark: v })}
+            placeholder="填报说明（选填）"
+          />
+        </FormRow>
       </Modal>
     </>
   );

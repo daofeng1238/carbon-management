@@ -339,6 +339,7 @@ a:hover { color: var(--c-primary-hover); }
 .cc-tag.scope1 { background: var(--c-scope1-bg); color: var(--c-scope1); }
 .cc-tag.scope2 { background: var(--c-scope2-bg); color: var(--c-scope2); }
 .cc-tag.scope3 { background: var(--c-scope3-bg); color: var(--c-scope3); }
+.cc-tag.blue { background: #e8f0fe; color: #1a73e8; }
 .cc-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
 
 /* ── Modal ── */

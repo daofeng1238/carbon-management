@@ -1,23 +1,13 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchOrgTree, createOrg, updateOrg, deleteOrg } from '@/api/organizations';
+import { fetchIndustries } from '@/api/dict';
 import {
   PageHeader, Panel, Button, Select, Input, Tree, Modal, FormRow,
   Tag, getIndustryShort, useToast, useConfirm,
 } from '@/components/ui';
 
 const LEVEL_LABELS: Record<number, string> = { 1: '集团', 2: '板块', 3: '子公司', 4: '厂区' };
-
-const INDUSTRIES = [
-  { value: 'POWER', label: '电力' },
-  { value: 'STEEL', label: '钢铁' },
-  { value: 'CHEMICAL', label: '化工' },
-  { value: 'CEMENT', label: '水泥' },
-  { value: 'ALUMINUM', label: '铝' },
-  { value: 'PAPER', label: '造纸' },
-  { value: 'TEXTILE', label: '纺织' },
-  { value: 'GENERAL', label: '通用' },
-];
 
 export default function Organization() {
   const qc = useQueryClient();
@@ -31,6 +21,13 @@ export default function Organization() {
     queryKey: ['orgTree'],
     queryFn: () => fetchOrgTree(),
   });
+
+  const { data: industriesData } = useQuery({
+    queryKey: ['industries'],
+    queryFn: () => fetchIndustries(),
+    staleTime: 10 * 60 * 1000,
+  });
+  const INDUSTRIES = (industriesData as any[] || []).map((i: any) => ({ value: i.code, label: i.name }));
 
   const saveMut = useMutation({
     mutationFn: (body: any) => form.id ? updateOrg(form.id, body) : createOrg(body),

@@ -255,9 +255,8 @@ export class EntriesService {
         }
 
         const scope = CATEGORY_SCOPE[factor.categoryCode] || 1;
-        const id = `E${String(Date.now() + rowNum).padStart(6, '0').slice(-6)}`;
         const entry = this.repo.create({
-          id: `E${String(rowNum + 100000).padStart(6, '0')}`,
+          id: 'PLACEHOLDER',
           orgId: org.id,
           period,
           periodType: 'month',
@@ -289,6 +288,16 @@ export class EntriesService {
     }
 
     if (toInsert.length) {
+      // Assign sequential IDs to avoid collision
+      const maxEntry = await this.repo.createQueryBuilder('e').select('MAX(e.id)', 'max').getRawOne();
+      let nextNum = 1;
+      if (maxEntry?.max) {
+        const match = maxEntry.max.match(/^E(\d+)$/);
+        if (match) nextNum = parseInt(match[1]) + 1;
+      }
+      toInsert.forEach((entry) => {
+        entry.id = `E${String(nextNum++).padStart(6, '0')}`;
+      });
       await this.repo.save(toInsert);
     }
 
