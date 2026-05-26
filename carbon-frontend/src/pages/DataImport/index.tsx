@@ -4,6 +4,17 @@ import { importEntries, downloadTemplate } from '@/api/entries';
 import { PageHeader, Panel, Button, Select, Table, fmt } from '@/components/ui';
 import { Icon } from '@/components/ui';
 
+const INDUSTRIES = [
+  { value: 'POWER', label: '电力' },
+  { value: 'STEEL', label: '钢铁' },
+  { value: 'CHEMICAL', label: '化工' },
+  { value: 'CEMENT', label: '水泥' },
+  { value: 'ALUMINUM', label: '铝冶炼' },
+  { value: 'PAPER', label: '造纸' },
+  { value: 'TEXTILE', label: '纺织' },
+  { value: 'GENERAL', label: '通用' },
+];
+
 export default function DataImport() {
   const { currentOrg } = useOrg();
   const [step, setStep] = useState(1);
@@ -13,6 +24,7 @@ export default function DataImport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
+  const [industry, setIndustry] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
   const acceptFile = (f: File) => {
@@ -20,7 +32,6 @@ export default function DataImport() {
     if (f.size > 10 * 1024 * 1024) { setError('文件大小不能超过 10MB'); return; }
     setFile(f);
     setError('');
-    setStep(2);
   };
 
   const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +66,7 @@ export default function DataImport() {
     if (inputRef.current) inputRef.current.value = '';
   };
 
-  const steps = ['选择文件', '配置选项', '导入结果'];
+  const steps = ['下载模板', '上传文件', '导入结果'];
 
   const errorColumns = [
     { key: 'row', title: '行号', width: 60 },
@@ -68,12 +79,12 @@ export default function DataImport() {
   return (
     <>
       <PageHeader
-        title="批量导入"
-        breadcrumb={['首页', '批量导入']}
+        title="批量数据导入"
+        breadcrumb={['首页', '数据填报', '批量导入']}
         orgName={currentOrg?.name}
         extra={
-          <Button icon="download" onClick={() => downloadTemplate()}>
-            下载模板
+          <Button icon="edit" onClick={() => window.location.hash = '#/data-entry'}>
+            返回填报
           </Button>
         }
       />
@@ -104,90 +115,175 @@ export default function DataImport() {
         ))}
       </div>
 
+      {/* Step 1: Download Template */}
       {step === 1 && (
-        <Panel>
-          <div
-            className={'cc-upload-zone' + (dragging ? ' dragging' : '')}
-            onClick={() => inputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-          >
-            <div style={{ fontSize: 36, color: 'var(--c-primary)', marginBottom: 12, lineHeight: 1 }}>
-              <Icon name="upload" size={48} color="var(--c-primary)" />
-            </div>
-            <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--c-text-regular)', marginBottom: 6 }}>
-              点击或拖拽 Excel 文件到此处上传
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--c-text-muted)' }}>支持 .xlsx / .xls 格式，文件不超过 10MB</div>
-            {error && (
-              <div style={{ marginTop: 12, color: 'var(--c-danger)', fontSize: 13 }}>{error}</div>
-            )}
-            <input ref={inputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFilePick} />
-          </div>
-        </Panel>
-      )}
-
-      {step === 2 && file && (
-        <Panel title="配置导入选项">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--c-bg-page)', borderRadius: 6, marginBottom: 20 }}>
-            <Icon name="doc" size={18} color="var(--c-primary)" />
-            <span style={{ fontSize: 14, fontWeight: 500 }}>{file.name}</span>
-            <span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>({(file.size / 1024).toFixed(1)} KB)</span>
+        <>
+          {/* Info banner */}
+          <div style={{
+            background: 'var(--c-primary-bg)', border: '1px solid #b8ddd0', borderRadius: 6,
+            padding: '10px 16px', marginBottom: 20, fontSize: 13, color: '#333',
+            display: 'flex', alignItems: 'flex-start', gap: 8,
+          }}>
+            <span style={{ color: 'var(--c-primary)', fontSize: 15, marginTop: 1, flexShrink: 0 }}>&#9432;</span>
+            <span>
+              请按模板填写排放活动数据。模板包含 <strong>组织编码</strong>、<strong>报告期</strong>、<strong>排放类别</strong>、<strong>排放因子编码</strong>、<strong>活动数据</strong>、<strong>单位</strong> 等必填字段。组织编码必须为当前用户有权限访问的组织节点。
+            </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', maxWidth: 560 }}>
-            <div>
-              <div style={{ fontSize: 13, color: 'var(--c-text-secondary)', marginBottom: 6 }}>冲突处理方式</div>
+          {/* Two template cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+            {/* Standard template card */}
+            <Panel>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 8, background: 'var(--c-primary-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <Icon name="doc" size={24} color="var(--c-primary)" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--c-text-primary)', marginBottom: 4 }}>标准排放数据导入模板</div>
+                  <div style={{ fontSize: 13, color: 'var(--c-text-muted)' }}>适用 ISO 14064-1 通用结构</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--c-text-secondary)', marginBottom: 20, lineHeight: 1.8 }}>
+                字段：组织编码、组织完整路径、报告期、排放类别、排放因子编码、活动数据、数量单位、备注
+              </div>
+              <Button variant="primary" icon="download" onClick={() => downloadTemplate()}>
+                下载通用模板
+              </Button>
+            </Panel>
+
+            {/* Industry template card */}
+            <Panel>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 16 }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 8, background: 'var(--c-primary-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}>
+                  <Icon name="doc" size={24} color="var(--c-primary)" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--c-text-primary)', marginBottom: 4 }}>行业专用模板</div>
+                  <div style={{ fontSize: 13, color: 'var(--c-text-muted)' }}>含行业专用因子预填</div>
+                </div>
+              </div>
               <Select
-                value={options.conflictPolicy}
-                onChange={(v) => setOptions({ ...options, conflictPolicy: v })}
-                style={{ width: '100%' }}
-                options={[
-                  { value: 'skip', label: '跳过（保留已有数据）' },
-                  { value: 'update', label: '覆盖（用新数据替换）' },
-                  { value: 'error', label: '报错（遇冲突中止）' },
-                ]}
+                value={industry}
+                onChange={setIndustry}
+                placeholder="选择行业"
+                options={INDUSTRIES}
+                style={{ width: '100%', marginBottom: 16 }}
               />
-            </div>
-            <div>
-              <div style={{ fontSize: 13, color: 'var(--c-text-secondary)', marginBottom: 6 }}>导入后状态</div>
-              <Select
-                value={options.importStatus}
-                onChange={(v) => setOptions({ ...options, importStatus: v })}
-                style={{ width: '100%' }}
-                options={[
-                  { value: 'draft', label: '草稿' },
-                  { value: 'submitted', label: '直接提交审核' },
-                ]}
-              />
-            </div>
+              <Button icon="download" onClick={() => downloadTemplate(industry || undefined)} disabled={!industry}>
+                下载行业模板
+              </Button>
+            </Panel>
           </div>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, cursor: 'pointer', fontSize: 13 }}>
-            <input
-              type="checkbox"
-              checked={options.validateRange}
-              onChange={(e) => setOptions({ ...options, validateRange: e.target.checked })}
-            />
-            <span>开启异常范围校验（超出行业典型值 10 倍时标记警告）</span>
-          </label>
-
-          {error && (
-            <div className="cc-alert danger" style={{ marginTop: 16 }}>
-              <Icon name="warning" size={14} /><span>{error}</span>
-            </div>
-          )}
-
-          <div className="cc-flex gap-8" style={{ marginTop: 24 }}>
-            <Button onClick={handleReset}>重新选择</Button>
-            <Button variant="primary" icon="upload" onClick={handleImport} disabled={loading}>
-              {loading ? <><span className="cc-spinner" />导入中...</> : '开始导入'}
+          {/* Next step button */}
+          <div style={{ textAlign: 'center' }}>
+            <Button variant="primary" onClick={() => setStep(2)} style={{ padding: '10px 40px', fontSize: 15 }}>
+              已下载模板，下一步
             </Button>
           </div>
+        </>
+      )}
+
+      {/* Step 2: Upload File + Config */}
+      {step === 2 && (
+        <Panel title="上传文件">
+          {!file ? (
+            <div
+              className={'cc-upload-zone' + (dragging ? ' dragging' : '')}
+              onClick={() => inputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+            >
+              <div style={{ fontSize: 36, color: 'var(--c-primary)', marginBottom: 12, lineHeight: 1 }}>
+                <Icon name="upload" size={48} color="var(--c-primary)" />
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--c-text-regular)', marginBottom: 6 }}>
+                点击或拖拽 Excel 文件到此处上传
+              </div>
+              <div style={{ fontSize: 13, color: 'var(--c-text-muted)' }}>支持 .xlsx / .xls 格式，文件不超过 10MB</div>
+              {error && (
+                <div style={{ marginTop: 12, color: 'var(--c-danger)', fontSize: 13 }}>{error}</div>
+              )}
+              <input ref={inputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFilePick} />
+            </div>
+          ) : (
+            <>
+              {/* File info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'var(--c-bg-page)', borderRadius: 6, marginBottom: 20 }}>
+                <Icon name="doc" size={18} color="var(--c-primary)" />
+                <span style={{ fontSize: 14, fontWeight: 500 }}>{file.name}</span>
+                <span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>({(file.size / 1024).toFixed(1)} KB)</span>
+                <span style={{ marginLeft: 'auto', cursor: 'pointer', color: 'var(--c-text-muted)', fontSize: 12 }}
+                  onClick={() => { setFile(null); if (inputRef.current) inputRef.current.value = ''; }}>
+                  重新选择
+                </span>
+                <input ref={inputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleFilePick} />
+              </div>
+
+              {/* Import options */}
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text-primary)', marginBottom: 12 }}>配置导入选项</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', maxWidth: 560 }}>
+                <div>
+                  <div style={{ fontSize: 13, color: 'var(--c-text-secondary)', marginBottom: 6 }}>冲突处理方式</div>
+                  <Select
+                    value={options.conflictPolicy}
+                    onChange={(v) => setOptions({ ...options, conflictPolicy: v })}
+                    style={{ width: '100%' }}
+                    options={[
+                      { value: 'skip', label: '跳过（保留已有数据）' },
+                      { value: 'update', label: '覆盖（用新数据替换）' },
+                      { value: 'error', label: '报错（遇冲突中止）' },
+                    ]}
+                  />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, color: 'var(--c-text-secondary)', marginBottom: 6 }}>导入后状态</div>
+                  <Select
+                    value={options.importStatus}
+                    onChange={(v) => setOptions({ ...options, importStatus: v })}
+                    style={{ width: '100%' }}
+                    options={[
+                      { value: 'draft', label: '草稿' },
+                      { value: 'submitted', label: '直接提交审核' },
+                    ]}
+                  />
+                </div>
+              </div>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, cursor: 'pointer', fontSize: 13 }}>
+                <input
+                  type="checkbox"
+                  checked={options.validateRange}
+                  onChange={(e) => setOptions({ ...options, validateRange: e.target.checked })}
+                />
+                <span>开启异常范围校验（超出行业典型值 10 倍时标记警告）</span>
+              </label>
+
+              {error && (
+                <div className="cc-alert danger" style={{ marginTop: 16 }}>
+                  <Icon name="warning" size={14} /><span>{error}</span>
+                </div>
+              )}
+
+              <div className="cc-flex gap-8" style={{ marginTop: 24 }}>
+                <Button onClick={() => { setStep(1); setFile(null); setError(''); }}>上一步</Button>
+                <Button variant="primary" icon="upload" onClick={handleImport} disabled={loading}>
+                  {loading ? <><span className="cc-spinner" />导入中...</> : '开始导入'}
+                </Button>
+              </div>
+            </>
+          )}
         </Panel>
       )}
 
+      {/* Step 3: Results */}
       {step === 3 && result && (
         <Panel title="导入结果">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>

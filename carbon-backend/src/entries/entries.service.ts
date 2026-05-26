@@ -370,6 +370,17 @@ export class EntriesService {
     return { total, success, failed, skipped, errorRows };
   }
 
+  async getFactorsByIndustry(industry: string) {
+    return this.factorRepo.find({
+      where: [
+        { industryCode: industry, status: 'enabled' },
+        { industryCode: 'GENERAL', status: 'enabled' },
+      ],
+      order: { categoryCode: 'ASC', id: 'ASC' },
+      take: 100,
+    });
+  }
+
   async exportEntries(query: any, res: any) {
     const data = await this.getList({ ...query, page: 1, pageSize: 10000 });
     const workbook = new ExcelJS.Workbook();
