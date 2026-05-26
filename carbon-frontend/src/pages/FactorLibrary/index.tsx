@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchFactors, createFactor, updateFactor, updateFactorStatus, deleteFactor, fetchFactorHistory,
-  importFactors,
+  importFactors, downloadFactorTemplate,
 } from '@/api/factors';
 import { fetchIndustries, fetchCategories } from '@/api/dict';
 import {
@@ -209,7 +209,7 @@ export default function FactorLibrary() {
         breadcrumb={['首页', '排放因子库']}
         extra={
           <div className="cc-flex gap-8">
-            <Button icon="download" onClick={() => window.open('/api/v1/factors/template', '_blank')}>下载模板</Button>
+            <Button icon="download" onClick={() => downloadFactorTemplate()}>下载模板</Button>
             <Button icon="upload" onClick={() => { setImportFile(null); setImportResult(null); setImportModalOpen(true); }}>批量导入</Button>
             <Button variant="primary" icon="plus" onClick={openCreate}>新建因子</Button>
           </div>
