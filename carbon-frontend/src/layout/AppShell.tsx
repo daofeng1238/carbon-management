@@ -19,7 +19,7 @@ const NAV_GROUPS = [
   ]},
 ];
 
-function OrgSwitcher() {
+export function OrgSwitcher() {
   const { flat, orgId, setOrgId, currentOrg, tree } = useOrg();
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState<string[]>([]);
@@ -135,9 +135,6 @@ export default function AppShell() {
         <button className="cc-collapse-btn" onClick={() => setCollapsed(v => !v)} title="折叠侧边栏">
           <Icon name="menu" size={18} />
         </button>
-        <div style={{ marginLeft: 24 }}>
-          <OrgSwitcher />
-        </div>
         <div className="cc-header-right">
           <button className="cc-collapse-btn" title="通知"><Icon name="bell" size={16} /></button>
           <button className="cc-collapse-btn" title="设置"><Icon name="setting" size={16} /></button>

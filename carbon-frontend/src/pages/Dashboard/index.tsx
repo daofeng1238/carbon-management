@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useOrg } from '@/contexts/OrgContext';
 import { fetchDashboardOverview, fetchDashboardTrend } from '@/api/dashboard';
 import { PageHeader, Panel, Button, Select, fmt, fmtPct } from '@/components/ui';
+import { OrgSwitcher } from '@/layout/AppShell';
 import dayjs from 'dayjs';
 
 // ── Doughnut chart ────────────────────────────────────────────────
@@ -191,6 +192,8 @@ export default function Dashboard() {
         orgName={currentOrg?.name}
         extra={
           <div className="cc-flex gap-8 align-c" style={{ flexWrap: 'wrap' }}>
+            <OrgSwitcher />
+            <div style={{ width: 1, height: 24, background: 'var(--c-border)', margin: '0 4px' }} />
             <Select value={rangeMode} onChange={(v) => setRangeMode(v)} options={[
               { value: '12m', label: '近 12 个月' },
               { value: '6m', label: '近 6 个月' },
