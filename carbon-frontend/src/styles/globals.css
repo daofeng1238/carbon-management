@@ -355,6 +355,10 @@ a:hover { color: var(--c-primary-hover); }
   transition: background .15s;
 }
 .cc-table tbody tr:hover td { background: #f5f7fa; }
+.cc-cell {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 100%;
+}
 .cc-table td.num, .cc-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .cc-table td.center, .cc-table th.center { text-align: center; }
 .cc-table td.actions { white-space: nowrap; }

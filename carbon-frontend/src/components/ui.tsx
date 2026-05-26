@@ -241,9 +241,16 @@ interface TableProps {
 }
 export const Table: React.FC<TableProps> = ({ columns, data = [], rowKey = 'id', emptyText = '暂无数据', maxHeight }) => {
   const minW = columns.reduce((s, c) => s + (c.width || c.minWidth || 120), 0);
+
+  const cellTitle = (v: React.ReactNode): string | undefined => {
+    if (v == null) return undefined;
+    if (typeof v === 'string' || typeof v === 'number') return String(v);
+    return undefined;
+  };
+
   return (
     <div style={{ overflow: 'auto', maxHeight }}>
-      <table className="cc-table" style={{ minWidth: minW }}>
+      <table className="cc-table" style={{ minWidth: minW, tableLayout: 'fixed' }}>
         <thead>
           <tr>
             {columns.map((c, i) => (
@@ -260,9 +267,12 @@ export const Table: React.FC<TableProps> = ({ columns, data = [], rowKey = 'id',
             <tr key={row[rowKey] ?? idx}>
               {columns.map((c, i) => {
                 const v = typeof c.render === 'function' ? c.render(row, idx) : row[c.key];
+                const raw = typeof c.render !== 'function' ? row[c.key] : undefined;
                 return (
                   <td key={i} className={c.align === 'right' ? 'num' : c.align === 'center' ? 'center' : ''}>
-                    {v}
+                    <div className="cc-cell" title={cellTitle(raw) || cellTitle(v)}>
+                      {v}
+                    </div>
                   </td>
                 );
               })}

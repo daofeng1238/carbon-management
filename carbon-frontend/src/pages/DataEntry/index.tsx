@@ -135,12 +135,7 @@ export default function DataEntry() {
   const columns = [
     {
       key: 'orgName', title: '所属组织', minWidth: 130,
-      render: (r: any) => (
-        <div>
-          <div style={{ fontWeight: 500, fontSize: 13 }}>{r.orgName}</div>
-          <div style={{ fontSize: 11, color: 'var(--c-text-muted)', fontFamily: 'monospace' }}>{r.orgCode}</div>
-        </div>
-      ),
+      render: (r: any) => <span title={`${r.orgName}（${r.orgCode}）`}>{r.orgName}</span>,
     },
     { key: 'period', title: '报告期', width: 85 },
     {
