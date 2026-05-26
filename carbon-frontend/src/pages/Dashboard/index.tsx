@@ -269,51 +269,61 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Charts */}
-      {monthly.length > 0 && (
-        <div className="cc-grid" style={{ gridTemplateColumns: '1fr 400px' }}>
-          <Panel title="月度排放趋势（按范围）">
-            <GroupedBar data={monthly} />
-            <div className="cc-flex gap-16" style={{ marginTop: 12, justifyContent: 'center', fontSize: 12, color: 'var(--c-text-secondary)' }}>
-              {[['范围一', 'var(--c-scope1)'], ['范围二', 'var(--c-scope2)'], ['范围三', 'var(--c-scope3)']].map(([label, color]) => (
-                <span key={label} className="cc-flex gap-8 align-c">
-                  <span style={{ width: 12, height: 12, background: color as string, borderRadius: 2, flexShrink: 0 }} />
-                  {label}
-                </span>
-              ))}
-            </div>
-          </Panel>
-          <Panel title="范围排放占比">
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <Doughnut data={scopeData} total={total} />
-              <div style={{ width: '100%' }}>
-                {scopeData.map((d, i) => (
-                  <div key={i} className="cc-flex between align-c" style={{ padding: '6px 0', fontSize: 13 }}>
-                    <span className="cc-flex gap-8 align-c">
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: d.color, flexShrink: 0 }} />
-                      {d.label}
-                    </span>
-                    <span style={{ color: 'var(--c-text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
-                      {fmt(d.value, 0)} ({fmt(total ? d.value / total * 100 : 0, 1)}%)
-                    </span>
-                  </div>
+      {/* Charts — always visible */}
+      <div className="cc-grid" style={{ gridTemplateColumns: '1fr 400px' }}>
+        <Panel title="月度排放趋势（按范围）">
+          {monthly.length > 0 ? (
+            <>
+              <GroupedBar data={monthly} />
+              <div className="cc-flex gap-16" style={{ marginTop: 12, justifyContent: 'center', fontSize: 12, color: 'var(--c-text-secondary)' }}>
+                {[['范围一', 'var(--c-scope1)'], ['范围二', 'var(--c-scope2)'], ['范围三', 'var(--c-scope3)']].map(([label, color]) => (
+                  <span key={label} className="cc-flex gap-8 align-c">
+                    <span style={{ width: 12, height: 12, background: color as string, borderRadius: 2, flexShrink: 0 }} />
+                    {label}
+                  </span>
                 ))}
               </div>
+            </>
+          ) : (
+            <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--c-text-muted)', fontSize: 13 }}>
+              当前组织在所选时间范围内暂无排放数据
             </div>
-          </Panel>
-        </div>
-      )}
+          )}
+        </Panel>
+        <Panel title="范围排放占比">
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <Doughnut data={scopeData} total={total} />
+            <div style={{ width: '100%' }}>
+              {scopeData.map((d, i) => (
+                <div key={i} className="cc-flex between align-c" style={{ padding: '6px 0', fontSize: 13 }}>
+                  <span className="cc-flex gap-8 align-c">
+                    <span style={{ width: 10, height: 10, borderRadius: 2, background: d.color, flexShrink: 0 }} />
+                    {d.label}
+                  </span>
+                  <span style={{ color: 'var(--c-text-secondary)', fontVariantNumeric: 'tabular-nums' }}>
+                    {fmt(d.value, 0)} ({fmt(total ? d.value / total * 100 : 0, 1)}%)
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Panel>
+      </div>
 
       <div className="cc-grid cols-2">
-        {catData.length > 0 && (
-          <Panel title="排放源类别分布">
+        <Panel title="排放源类别分布">
+          {catData.length > 0 ? (
             <HBar data={catData} />
-          </Panel>
-        )}
-        {subOrgData.length > 0 && (
-          <Panel title="下辖组织排放对比" extra={
-            <span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>共 {subOrgData.length} 个 · 点击可查看下级看板</span>
-          }>
+          ) : (
+            <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--c-text-muted)', fontSize: 13 }}>
+              暂无排放源类别数据
+            </div>
+          )}
+        </Panel>
+        <Panel title="下辖组织排放对比" extra={
+          <span style={{ fontSize: 12, color: 'var(--c-text-muted)' }}>共 {subOrgData.length} 个 · 点击可查看下级看板</span>
+        }>
+          {subOrgData.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {subOrgData.map((d: any, i: number) => {
                 const m = Math.max(...subOrgData.map((x: any) => x.value), 1);
@@ -335,8 +345,12 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </Panel>
-        )}
+          ) : (
+            <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--c-text-muted)', fontSize: 13 }}>
+              当前组织暂无下辖组织排放数据
+            </div>
+          )}
+        </Panel>
       </div>
     </>
   );
