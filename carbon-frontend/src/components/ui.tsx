@@ -190,7 +190,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, 
             }}
               onClick={() => toggle(o.value)}
             >
-              <input type="checkbox" checked={value.includes(o.value)} onChange={() => toggle(o.value)} style={{ accentColor: 'var(--c-primary)', cursor: 'pointer', flexShrink: 0 }} />
+              <input type="checkbox" checked={value.includes(o.value)} onChange={() => {}} style={{ accentColor: 'var(--c-primary)', pointerEvents: 'none', flexShrink: 0 }} />
               <span>{o.label}</span>
             </div>
           ))}
