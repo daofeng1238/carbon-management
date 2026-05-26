@@ -230,7 +230,6 @@ a:hover { color: var(--c-primary-hover); }
   border: 1px solid var(--c-border-lighter);
   border-radius: var(--c-radius);
   box-shadow: var(--c-shadow-card);
-  overflow: hidden;
 }
 .cc-panel-header {
   padding: 12px 20px;
