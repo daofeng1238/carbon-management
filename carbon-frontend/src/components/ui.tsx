@@ -184,16 +184,15 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, 
           boxShadow: '0 4px 12px rgba(0,0,0,.12)', marginTop: 2, maxHeight: 220, overflow: 'auto',
         }}>
           {options.map(o => (
-            <label key={o.value} style={{
+            <div key={o.value} style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer',
               fontSize: 13, background: value.includes(o.value) ? 'var(--c-bg-page)' : 'transparent',
             }}
-              onMouseDown={e => e.preventDefault()}
               onClick={() => toggle(o.value)}
             >
-              <input type="checkbox" checked={value.includes(o.value)} readOnly style={{ accentColor: 'var(--c-primary)' }} />
+              <input type="checkbox" checked={value.includes(o.value)} onChange={() => toggle(o.value)} style={{ accentColor: 'var(--c-primary)', cursor: 'pointer', flexShrink: 0 }} />
               <span>{o.label}</span>
-            </label>
+            </div>
           ))}
         </div>
       )}
