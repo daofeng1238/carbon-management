@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useOrg } from '@/contexts/OrgContext';
-import { importEntries } from '@/api/entries';
+import { importEntries, downloadTemplate } from '@/api/entries';
 import { PageHeader, Panel, Button, Select, Table, fmt } from '@/components/ui';
 import { Icon } from '@/components/ui';
 
@@ -72,7 +72,7 @@ export default function DataImport() {
         breadcrumb={['首页', '批量导入']}
         orgName={currentOrg?.name}
         extra={
-          <Button icon="download" onClick={() => window.open('/api/v1/entries/import/template', '_blank')}>
+          <Button icon="download" onClick={() => downloadTemplate()}>
             下载模板
           </Button>
         }

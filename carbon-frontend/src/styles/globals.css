@@ -138,7 +138,7 @@ a:hover { color: var(--c-primary-hover); }
 /* Org Switcher */
 .cc-org-switcher {
   display: flex; align-items: center; gap: 6px;
-  padding: 6px 12px; min-width: 280px;
+  padding: 6px 12px; min-width: 220px; max-width: 320px;
   border: 1px solid var(--c-border);
   border-radius: var(--c-radius);
   background: var(--c-bg-panel);
@@ -380,16 +380,16 @@ a:hover { color: var(--c-primary-hover); }
 
 /* ── Cascader ── */
 .cc-pop-cascader {
-  position: absolute; top: calc(100% + 4px); left: 0;
+  position: absolute; top: calc(100% + 4px); right: 0;
   background: var(--c-bg-panel);
   border: 1px solid var(--c-border-light);
   border-radius: var(--c-radius);
   box-shadow: var(--c-shadow-dropdown);
   z-index: 100;
-  display: flex; min-width: 580px; padding: 4px;
+  display: flex; max-width: 90vw; padding: 4px;
 }
 .cc-pop-col {
-  flex: 1; min-width: 180px; max-height: 320px;
+  flex: 0 0 auto; width: 170px; max-height: 320px;
   overflow-y: auto;
   border-right: 1px solid var(--c-border-lighter);
 }

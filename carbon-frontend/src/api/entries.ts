@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { api } from './client';
 
 export const fetchEntries = (params?: any) =>
@@ -26,6 +27,21 @@ export const approveEntry = (id: string) =>
 
 export const rejectEntry = (id: string, reason: string) =>
   api.post(`/entries/${id}/reject`, { reason });
+
+export const downloadTemplate = async () => {
+  const baseURL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_BASE || '/api/v1';
+  const token = localStorage.getItem('token');
+  const res = await axios.get(`${baseURL}/entries/import/template`, {
+    responseType: 'blob',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  const url = URL.createObjectURL(res.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'entry_template.xlsx';
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 export const importEntries = (file: File, options: any) => {
   const form = new FormData();
