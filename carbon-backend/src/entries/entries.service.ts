@@ -44,9 +44,21 @@ export class EntriesService {
     if (period) qb.andWhere('e.period = :period', { period });
     if (periodStart) qb.andWhere('e.period >= :periodStart', { periodStart });
     if (periodEnd) qb.andWhere('e.period <= :periodEnd', { periodEnd });
-    if (scope) qb.andWhere('e.scope = :scope', { scope: +scope });
-    if (category) qb.andWhere('e.category_code = :category', { category });
-    if (status) qb.andWhere('e.status = :status', { status });
+    if (scope) {
+      const scopes = String(scope).split(',').map(s => +s.trim()).filter(s => !isNaN(s));
+      if (scopes.length === 1) qb.andWhere('e.scope = :scope', { scope: scopes[0] });
+      else if (scopes.length > 1) qb.andWhere('e.scope IN (:...scopes)', { scopes });
+    }
+    if (category) {
+      const cats = String(category).split(',').map(s => s.trim()).filter(Boolean);
+      if (cats.length === 1) qb.andWhere('e.category_code = :category', { category: cats[0] });
+      else if (cats.length > 1) qb.andWhere('e.category_code IN (:...cats)', { cats });
+    }
+    if (status) {
+      const statuses = String(status).split(',').map(s => s.trim()).filter(Boolean);
+      if (statuses.length === 1) qb.andWhere('e.status = :status', { status: statuses[0] });
+      else if (statuses.length > 1) qb.andWhere('e.status IN (:...statuses)', { statuses });
+    }
 
     const result = await qb
       .select('e.scope', 'scope')
@@ -80,16 +92,28 @@ export class EntriesService {
     if (period) qb.andWhere('e.period = :period', { period });
     if (periodStart) qb.andWhere('e.period >= :periodStart', { periodStart });
     if (periodEnd) qb.andWhere('e.period <= :periodEnd', { periodEnd });
-    if (scope) qb.andWhere('e.scope = :scope', { scope: +scope });
-    if (category) qb.andWhere('e.category_code = :category', { category });
-    if (status) qb.andWhere('e.status = :status', { status });
+    if (scope) {
+      const scopes = String(scope).split(',').map(s => +s.trim()).filter(s => !isNaN(s));
+      if (scopes.length === 1) qb.andWhere('e.scope = :scope', { scope: scopes[0] });
+      else if (scopes.length > 1) qb.andWhere('e.scope IN (:...scopes)', { scopes });
+    }
+    if (category) {
+      const cats = String(category).split(',').map(s => s.trim()).filter(Boolean);
+      if (cats.length === 1) qb.andWhere('e.category_code = :category', { category: cats[0] });
+      else if (cats.length > 1) qb.andWhere('e.category_code IN (:...cats)', { cats });
+    }
+    if (status) {
+      const statuses = String(status).split(',').map(s => s.trim()).filter(Boolean);
+      if (statuses.length === 1) qb.andWhere('e.status = :status', { status: statuses[0] });
+      else if (statuses.length > 1) qb.andWhere('e.status IN (:...statuses)', { statuses });
+    }
     if (keyword) {
-      qb.leftJoin('emission_factors', 'f', 'f.id = e.factor_id')
-        .leftJoin('organizations', 'o', 'o.id = e.org_id')
-        .andWhere(
-          '(e.id ILIKE :kw OR e.factor_id ILIKE :kw OR f.name ILIKE :kw OR o.name ILIKE :kw OR o.code ILIKE :kw OR e.remark ILIKE :kw)',
-          { kw: `%${keyword}%` },
-        );
+      qb.andWhere(
+        `(e.id ILIKE :kw OR e.remark ILIKE :kw OR e.factor_id ILIKE :kw
+          OR EXISTS (SELECT 1 FROM emission_factors ef WHERE ef.id = e.factor_id AND ef.name ILIKE :kw)
+          OR EXISTS (SELECT 1 FROM organizations org WHERE org.id = e.org_id AND (org.name ILIKE :kw OR org.code ILIKE :kw)))`,
+        { kw: `%${keyword}%` },
+      );
     }
 
     qb.orderBy('e.period', 'DESC').addOrderBy('e.created_at', 'DESC');

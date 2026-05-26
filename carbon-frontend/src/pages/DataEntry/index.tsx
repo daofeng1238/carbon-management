@@ -4,7 +4,7 @@ import { useOrg } from '@/contexts/OrgContext';
 import { fetchEntries, fetchEntrySummary, createEntry, updateEntry, deleteEntry, submitEntry, approveEntry } from '@/api/entries';
 import { fetchRecommendedFactors } from '@/api/factors';
 import {
-  PageHeader, Panel, Button, Select, Input, Table, Pagination,
+  PageHeader, Panel, Button, Select, MultiSelect, Input, Table, Pagination,
   Modal, FormRow, StatusTag, ScopeTag, fmt, useToast, useConfirm,
 } from '@/components/ui';
 
@@ -28,19 +28,19 @@ export default function DataEntry() {
   const confirm = useConfirm();
 
   const [page, setPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [filterPeriod, setFilterPeriod] = useState('');
-  const [filterScope, setFilterScope] = useState('');
-  const [filterCategory, setFilterCategory] = useState('');
+  const [filterScope, setFilterScope] = useState<string[]>([]);
+  const [filterCategory, setFilterCategory] = useState<string[]>([]);
   const [keyword, setKeyword] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<any>({});
 
   const filters: any = {};
-  if (filterStatus) filters.status = filterStatus;
+  if (filterStatus.length) filters.status = filterStatus.join(',');
   if (filterPeriod) filters.period = filterPeriod;
-  if (filterScope) filters.scope = filterScope;
-  if (filterCategory) filters.category = filterCategory;
+  if (filterScope.length) filters.scope = filterScope.join(',');
+  if (filterCategory.length) filters.category = filterCategory.join(',');
   if (keyword) filters.keyword = keyword;
 
   const { data, isLoading } = useQuery({
@@ -118,7 +118,7 @@ export default function DataEntry() {
   };
 
   const resetFilters = () => {
-    setFilterStatus(''); setFilterPeriod(''); setFilterScope(''); setFilterCategory(''); setKeyword(''); setPage(1);
+    setFilterStatus([]); setFilterPeriod(''); setFilterScope([]); setFilterCategory([]); setKeyword(''); setPage(1);
   };
 
   const selectedFactor = (factors as any[])?.find((f: any) => f.id === form.factorId);
@@ -252,20 +252,20 @@ export default function DataEntry() {
         extra={
           <div className="cc-flex gap-8 align-c" style={{ flexWrap: 'wrap' }}>
             <Input type="month" value={filterPeriod} onChange={setFilterPeriod} placeholder="全部报告期" style={{ width: 130 }} />
-            <Select value={filterScope} onChange={setFilterScope} placeholder="全部范围"
+            <MultiSelect value={filterScope} onChange={setFilterScope} placeholder="全部范围"
               options={[{ value: '1', label: '范围一' }, { value: '2', label: '范围二' }, { value: '3', label: '范围三' }]}
-              style={{ width: 100 }}
-            />
-            <Select value={filterCategory} onChange={setFilterCategory} placeholder="全部类别"
-              options={Object.entries(CATEGORY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
               style={{ width: 120 }}
             />
-            <Select value={filterStatus} onChange={setFilterStatus} placeholder="全部状态"
+            <MultiSelect value={filterCategory} onChange={setFilterCategory} placeholder="全部类别"
+              options={Object.entries(CATEGORY_LABELS).map(([v, l]) => ({ value: v, label: l }))}
+              style={{ width: 140 }}
+            />
+            <MultiSelect value={filterStatus} onChange={setFilterStatus} placeholder="全部状态"
               options={[
                 { value: 'draft', label: '草稿' }, { value: 'submitted', label: '已提交' },
                 { value: 'approved', label: '已审核' }, { value: 'rejected', label: '已驳回' },
               ]}
-              style={{ width: 100 }}
+              style={{ width: 120 }}
             />
             <Input value={keyword} onChange={setKeyword} placeholder="搜索排放源 / 组织..." style={{ width: 170 }} />
             <Button onClick={resetFilters}>重置</Button>

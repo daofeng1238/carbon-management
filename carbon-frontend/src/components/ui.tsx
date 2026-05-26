@@ -131,6 +131,76 @@ export const Select: React.FC<SelectProps> = ({ value, onChange, options = [], p
   );
 };
 
+// ── MultiSelect ──────────────────────────────────────────────────
+interface MultiSelectProps {
+  value?: string[];
+  onChange?: (v: string[]) => void;
+  options?: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  style?: React.CSSProperties;
+}
+export const MultiSelect: React.FC<MultiSelectProps> = ({ value = [], onChange, options = [], placeholder = '请选择', disabled, style }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const toggle = (v: string) => {
+    if (!onChange) return;
+    if (value.includes(v)) onChange(value.filter(x => x !== v));
+    else onChange([...value, v]);
+  };
+
+  const displayText = value.length === 0
+    ? placeholder
+    : value.length <= 2
+      ? value.map(v => options.find(o => o.value === v)?.label || v).join(', ')
+      : `已选 ${value.length} 项`;
+
+  return (
+    <div className="cc-multiselect" ref={ref} style={{ position: 'relative', display: 'inline-block', ...style }}>
+      <div
+        className={'cc-select' + (disabled ? ' disabled' : '')}
+        style={{ cursor: disabled ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+        onClick={() => !disabled && setOpen(v => !v)}
+      >
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: value.length === 0 ? 'var(--c-text-muted)' : undefined }}>
+          {displayText}
+        </span>
+        <Icon name="chevronDown" size={10} />
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
+          background: '#fff', border: '1px solid var(--c-border-light)', borderRadius: 6,
+          boxShadow: '0 4px 12px rgba(0,0,0,.12)', marginTop: 2, maxHeight: 220, overflow: 'auto',
+        }}>
+          {options.map(o => (
+            <label key={o.value} style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', cursor: 'pointer',
+              fontSize: 13, background: value.includes(o.value) ? 'var(--c-bg-page)' : 'transparent',
+            }}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => toggle(o.value)}
+            >
+              <input type="checkbox" checked={value.includes(o.value)} readOnly style={{ accentColor: 'var(--c-primary)' }} />
+              <span>{o.label}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Panel ─────────────────────────────────────────────────────────
 interface PanelProps {
   title?: React.ReactNode;
