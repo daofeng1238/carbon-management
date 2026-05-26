@@ -13,10 +13,22 @@ export class FactorsService {
     const { industry, category, standard, status, keyword, page = 1, pageSize = 10 } = query;
     const qb = this.repo.createQueryBuilder('f');
 
-    if (industry) qb.andWhere('f.industry_code = :industry', { industry });
-    if (category) qb.andWhere('f.category_code = :category', { category });
+    if (industry) {
+      const vals = String(industry).split(',').map(s => s.trim()).filter(Boolean);
+      if (vals.length === 1) qb.andWhere('f.industry_code = :industry', { industry: vals[0] });
+      else if (vals.length > 1) qb.andWhere('f.industry_code IN (:...industries)', { industries: vals });
+    }
+    if (category) {
+      const vals = String(category).split(',').map(s => s.trim()).filter(Boolean);
+      if (vals.length === 1) qb.andWhere('f.category_code = :category', { category: vals[0] });
+      else if (vals.length > 1) qb.andWhere('f.category_code IN (:...categories)', { categories: vals });
+    }
     if (standard) qb.andWhere('f.standard = :standard', { standard });
-    if (status) qb.andWhere('f.status = :status', { status });
+    if (status) {
+      const vals = String(status).split(',').map(s => s.trim()).filter(Boolean);
+      if (vals.length === 1) qb.andWhere('f.status = :status', { status: vals[0] });
+      else if (vals.length > 1) qb.andWhere('f.status IN (:...statuses)', { statuses: vals });
+    }
     if (keyword) qb.andWhere('f.name ILIKE :kw', { kw: `%${keyword}%` });
 
     qb.orderBy('f.effective_date', 'DESC').addOrderBy('f.id', 'ASC');

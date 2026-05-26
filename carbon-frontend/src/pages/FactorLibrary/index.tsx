@@ -6,7 +6,7 @@ import {
 } from '@/api/factors';
 import { fetchIndustries, fetchCategories } from '@/api/dict';
 import {
-  PageHeader, Panel, Button, Select, Input, Table, Pagination,
+  PageHeader, Panel, Button, Select, MultiSelect, Input, Table, Pagination,
   Modal, FormRow, StatusTag, Tag, fmt, useToast, useConfirm, Icon,
 } from '@/components/ui';
 
@@ -25,9 +25,9 @@ export default function FactorLibrary() {
   const confirm = useConfirm();
   const [page, setPage] = useState(1);
   const [keyword, setKeyword] = useState('');
-  const [filterCat, setFilterCat] = useState('');
-  const [filterIndustry, setFilterIndustry] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterCat, setFilterCat] = useState<string[]>([]);
+  const [filterIndustry, setFilterIndustry] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -54,9 +54,9 @@ export default function FactorLibrary() {
 
   const filters: any = {};
   if (keyword) filters.keyword = keyword;
-  if (filterCat) filters.category = filterCat;
-  if (filterIndustry) filters.industry = filterIndustry;
-  if (filterStatus) filters.status = filterStatus;
+  if (filterCat.length) filters.category = filterCat.join(',');
+  if (filterIndustry.length) filters.industry = filterIndustry.join(',');
+  if (filterStatus.length) filters.status = filterStatus.join(',');
 
   const { data, isLoading } = useQuery({
     queryKey: ['factors', page, filters],
@@ -221,18 +221,18 @@ export default function FactorLibrary() {
         extra={
           <div className="cc-flex gap-8 align-c">
             <Input value={keyword} onChange={setKeyword} placeholder="搜索名称" style={{ width: 160 }} />
-            <Select
+            <MultiSelect
               value={filterCat} onChange={setFilterCat} placeholder="全部类别"
-              options={categoryOptions} style={{ width: 130 }}
+              options={categoryOptions} style={{ width: 140 }}
             />
-            <Select
+            <MultiSelect
               value={filterIndustry} onChange={setFilterIndustry} placeholder="全部行业"
-              options={industryOptions} style={{ width: 130 }}
+              options={industryOptions} style={{ width: 140 }}
             />
-            <Select
+            <MultiSelect
               value={filterStatus} onChange={setFilterStatus} placeholder="全部状态"
               options={[{ value: 'enabled', label: '启用' }, { value: 'disabled', label: '停用' }]}
-              style={{ width: 90 }}
+              style={{ width: 120 }}
             />
           </div>
         }
